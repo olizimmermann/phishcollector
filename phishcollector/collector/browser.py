@@ -8,6 +8,7 @@ rendered HTML, a full-page screenshot, cookies, and console output.
 
 import asyncio
 import hashlib
+import random
 from dataclasses import dataclass
 from typing import Optional
 
@@ -15,6 +16,7 @@ from fake_useragent import UserAgent
 from playwright.async_api import async_playwright
 
 _ua = UserAgent(browsers=["chrome", "firefox", "edge"])
+_UA_GETTERS = [lambda: _ua.chrome, lambda: _ua.firefox, lambda: _ua.edge]
 
 # Stealth init-script: hide automation signals so the phisher's anti-bot
 # checks see a real browser.
@@ -29,7 +31,7 @@ window.chrome = {runtime: {}};
 def random_user_agent() -> str:
     """Return a random realistic user-agent string."""
     try:
-        return _ua.random
+        return random.choice(_UA_GETTERS)()
     except Exception:
         return (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "

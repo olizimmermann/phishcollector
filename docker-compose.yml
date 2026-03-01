@@ -33,6 +33,11 @@ services:
       - ./data:/data
       - ./wordlists:/app/wordlists:ro
     shm_size: "2gb"   # Chromium needs shared memory
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+          cpus: "0.9"
 
   frontend:
     image: nginx:alpine

@@ -29,7 +29,7 @@ async def check(url: str, api_key: Optional[str] = None, proxy_url: Optional[str
             proxy=proxy_url or None,
             verify=ssl_verify,
         ) as client:
-            r = await client.post(_API_URL, params={"auth-key": api_key}, data={"url": url})
+            r = await client.post(_API_URL, data={"url": url}, headers={"Auth-Key": api_key})
             if not r.is_success:
                 try:
                     body = r.json()

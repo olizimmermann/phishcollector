@@ -336,6 +336,21 @@ td { padding: .55rem .75rem; vertical-align: middle; }
 .td-time { color: var(--dim); font-size: 11px; white-space: nowrap; }
 .td-acts { display: flex; gap: .35rem; align-items: center; }
 
+/* ── Sortable column headers ─────────────────────────────────── */
+thead th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+thead th.sortable:hover { color: var(--green); }
+thead th.sort-active    { color: var(--green); }
+.sort-arrow { margin-left: .25rem; opacity: .5; font-size: 8px; }
+thead th.sort-active .sort-arrow { opacity: 1; }
+
+/* ── Rescan child rows ───────────────────────────────────────── */
+.tr-rescan { background: rgba(0,255,65,.012); }
+.tr-rescan:hover { background: rgba(0,255,65,.025) !important; }
+.rescan-indent { color: var(--dim); font-size: 9px; opacity: .6; }
+
 /* ── Status badges ────────────────────────────────────────────── */
 .badge {
   display: inline-flex;

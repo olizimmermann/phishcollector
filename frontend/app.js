@@ -15,6 +15,9 @@ const S = {
   activeTab:      'fingerprint',
   currentDetailId: null,   // track which collection is shown so tab is preserved
   stats:          { total: 0, completed: 0, running: 0, failed: 0 },
+  collectionList: [],      // cached list for client-side sort without re-fetch
+  sortCol:        'submitted_at',
+  sortDir:        'desc',
 };
 
 
@@ -196,8 +199,15 @@ async function renderDashboard() {
 
 // ── Collections ─────────────────────────────────────────────────
 async function renderCollections() {
-  const list = await api('GET', '/collections?limit=500').catch(() => []);
+  S.collectionList = await api('GET', '/collections?limit=500').catch(() => []);
+  _renderCollectionContent();
+  if (S.collectionList.some(c => c.status === 'running' || c.status === 'pending')) {
+    startPolling(renderCollections, 5000);
+  }
+}
 
+function _renderCollectionContent() {
+  const list = S.collectionList;
   document.getElementById('content').innerHTML = `
     <div class="fade-in">
       <div class="card">
@@ -215,10 +225,55 @@ async function renderCollections() {
       </div>
     </div>
   `;
+}
 
-  if (list.some(c => c.status === 'running' || c.status === 'pending')) {
-    startPolling(renderCollections, 5000);
+function sortTable(col) {
+  if (S.sortCol === col) {
+    S.sortDir = S.sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    S.sortCol = col;
+    S.sortDir = col === 'submitted_at' ? 'desc' : 'asc';
   }
+  _renderCollectionContent();
+}
+
+// Group sorted list: roots in sort order, each followed by its rescan children
+function _groupedCollections(list) {
+  const byId = Object.fromEntries(list.map(c => [c.id, c]));
+  const dir = S.sortDir === 'asc' ? 1 : -1;
+
+  // Sort roots by chosen column
+  const roots = list
+    .filter(c => !c.parent_id || !byId[c.parent_id])
+    .sort((a, b) => {
+      let av = a[S.sortCol], bv = b[S.sortCol];
+      if (S.sortCol === 'submitted_at') {
+        av = av ? new Date(av).getTime() : 0;
+        bv = bv ? new Date(bv).getTime() : 0;
+      } else {
+        av = (av || '').toLowerCase();
+        bv = (bv || '').toLowerCase();
+      }
+      return av < bv ? -dir : av > bv ? dir : 0;
+    });
+
+  const placed = new Set();
+  const result = [];
+
+  function addWithChildren(c, depth) {
+    if (placed.has(c.id)) return;
+    placed.add(c.id);
+    result.push({ ...c, _depth: depth });
+    list
+      .filter(x => x.parent_id === c.id)
+      .sort((a, b) => new Date(a.submitted_at) - new Date(b.submitted_at))
+      .forEach(child => addWithChildren(child, depth + 1));
+  }
+
+  roots.forEach(c => addWithChildren(c, 0));
+  // catch any orphans whose parent isn't in the current page
+  list.filter(c => !placed.has(c.id)).forEach(c => addWithChildren(c, 0));
+  return result;
 }
 
 
@@ -412,20 +467,32 @@ function renderSearch() {
         <div class="card-body">
           <div class="search-grid">
             <div class="field-grp">
-              <label class="field-lbl">Favicon Hash (mmh3)</label>
-              <input class="cyber-input" id="s-fav" placeholder="-1234567890" autocomplete="off">
+              <label class="field-lbl">URL (partial)</label>
+              <input class="cyber-input" id="s-url" placeholder="amazon" autocomplete="off">
+            </div>
+            <div class="field-grp">
+              <label class="field-lbl">Tag</label>
+              <input class="cyber-input" id="s-tag" placeholder="phishing" autocomplete="off">
             </div>
             <div class="field-grp">
               <label class="field-lbl">IP Address</label>
               <input class="cyber-input" id="s-ip" placeholder="185.220.101.x" autocomplete="off">
             </div>
             <div class="field-grp">
-              <label class="field-lbl">Technology</label>
-              <input class="cyber-input" id="s-tech" placeholder="WordPress" autocomplete="off">
+              <label class="field-lbl">ASN</label>
+              <input class="cyber-input" id="s-asn" placeholder="AS13335" autocomplete="off">
             </div>
             <div class="field-grp">
               <label class="field-lbl">Country Code</label>
               <input class="cyber-input" id="s-country" placeholder="RU" autocomplete="off">
+            </div>
+            <div class="field-grp">
+              <label class="field-lbl">Technology</label>
+              <input class="cyber-input" id="s-tech" placeholder="WordPress" autocomplete="off">
+            </div>
+            <div class="field-grp">
+              <label class="field-lbl">Favicon Hash (mmh3)</label>
+              <input class="cyber-input" id="s-fav" placeholder="-1234567890" autocomplete="off">
             </div>
             <div class="field-grp">
               <label class="field-lbl">Page Title (partial)</label>
@@ -770,10 +837,13 @@ function _triggerDownload(blob, filename) {
 async function doSearch() {
   const p = new URLSearchParams();
   const g = id => document.getElementById(id)?.value.trim();
-  if (g('s-fav'))     p.set('favicon_hash', g('s-fav'));
+  if (g('s-url'))     p.set('url',          g('s-url'));
+  if (g('s-tag'))     p.set('tag',          g('s-tag'));
   if (g('s-ip'))      p.set('ip',           g('s-ip'));
-  if (g('s-tech'))    p.set('technology',   g('s-tech'));
+  if (g('s-asn'))     p.set('asn',          g('s-asn'));
   if (g('s-country')) p.set('country',      g('s-country'));
+  if (g('s-tech'))    p.set('technology',   g('s-tech'));
+  if (g('s-fav'))     p.set('favicon_hash', g('s-fav'));
   if (g('s-title'))   p.set('title',        g('s-title'));
 
   const res = document.getElementById('search-results');
@@ -782,6 +852,8 @@ async function doSearch() {
   try {
     const rows = await api('GET', `/search?${p}&limit=200`);
     if (!rows.length) { res.innerHTML = `<div class="empty">No results matched your query.</div>`; return; }
+
+    const indicatorCount = r => Object.values(r.phishing_indicators || {}).reduce((n, a) => n + a.length, 0);
 
     res.innerHTML = `
       <div class="card">
@@ -792,22 +864,27 @@ async function doSearch() {
           <div class="tbl-wrap">
             <table>
               <thead><tr>
-                <th>COLLECTION</th><th>IP</th><th>COUNTRY</th><th>TITLE</th>
-                <th>TECHNOLOGIES</th><th>FAVICON mmh3</th>
+                <th>ID</th><th>URL</th><th>SUBMITTED</th>
+                <th>IP</th><th>COUNTRY / ASN</th><th>TITLE</th>
+                <th>TECHNOLOGIES</th><th>TAGS</th><th>INDICATORS</th>
               </tr></thead>
               <tbody>
                 ${rows.map(r => `
-                  <tr>
-                    <td>
-                      <button class="btn btn-sm btn-c"
-                        onclick="location.hash='#detail/${r.collection_id}'"
+                  <tr onclick="location.hash='#detail/${r.collection_id}'" style="cursor:pointer" title="Open collection">
+                    <td class="td-id">
+                      <button class="btn btn-sm btn-c" onclick="event.stopPropagation();location.hash='#detail/${r.collection_id}'"
                         style="font-size:9px">${r.collection_id.slice(0,8)}…</button>
                     </td>
+                    <td class="td-url" title="${esc(r.url)}" style="max-width:220px">
+                      ${urlCell(r.url)}
+                    </td>
+                    <td class="td-time">${timeAgo(r.submitted_at)}</td>
                     <td style="font-size:11px">${esc(r.ip_address||'—')}</td>
-                    <td style="font-size:11px">${esc(r.country||'—')}</td>
-                    <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.title||'—')}</td>
-                    <td><div class="tags">${(r.technologies||[]).map(t=>`<span class="tag" style="font-size:9px">${esc(t)}</span>`).join('')}</div></td>
-                    <td style="font-size:11px;color:var(--purple)">${esc(r.favicon_hash_mmh3||'—')}</td>
+                    <td style="font-size:11px">${esc(r.country||'—')}<br><span style="color:var(--dim);font-size:10px">${esc(r.asn||'')}</span></td>
+                    <td style="font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.title||'—')}</td>
+                    <td><div class="tags">${(r.technologies||[]).map(t=>`<span class="tag tag-sm">${esc(t)}</span>`).join('')}</div></td>
+                    <td><div class="tags">${(r.tags||[]).map(t=>`<span class="tag tag-sm">${esc(t)}</span>`).join('')}</div></td>
+                    <td style="text-align:center">${indicatorCount(r) > 0 ? `<span class="badge badge-r">${indicatorCount(r)}</span>` : '—'}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -850,14 +927,26 @@ function collectionTable(list) {
   if (!list.length)
     return `<div class="empty">No collections yet. Submit a URL above to begin.</div>`;
 
+  const grouped = _groupedCollections(list);
+
+  const th = (col, label) => {
+    const active = S.sortCol === col;
+    const arrow = active ? (S.sortDir === 'asc' ? ' ▲' : ' ▼') : ' ⇅';
+    return `<th class="sortable${active ? ' sort-active' : ''}" onclick="sortTable('${col}')">${label}<span class="sort-arrow">${arrow}</span></th>`;
+  };
+
   return `
     <div class="tbl-wrap">
       <table>
-        <thead><tr><th>ID</th><th>URL</th><th>STATUS</th><th>SUBMITTED</th><th>ACTIONS</th></tr></thead>
+        <thead><tr>
+          ${th('id','ID')}${th('url','URL')}${th('status','STATUS')}${th('submitted_at','SUBMITTED')}<th>ACTIONS</th>
+        </tr></thead>
         <tbody>
-          ${list.map(c => `
-            <tr>
-              <td class="td-id">${c.id.slice(0,8)}…</td>
+          ${grouped.map(c => `
+            <tr class="${c._depth > 0 ? 'tr-rescan' : ''}">
+              <td class="td-id">
+                ${c._depth > 0 ? `<span class="rescan-indent">${'·'.repeat(c._depth)} ↳</span> ` : ''}${c.id.slice(0,8)}…
+              </td>
               <td class="td-url" title="${esc(c.url)}">
                 ${urlCell(c.url)}
                 ${(c.tags||[]).length ? `<div class="row-tags">${(c.tags).map(t=>`<span class="tag tag-sm">${esc(t)}</span>`).join('')}</div>` : ''}

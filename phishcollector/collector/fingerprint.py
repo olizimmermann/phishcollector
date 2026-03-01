@@ -27,7 +27,6 @@ import mmh3
 from bs4 import BeautifulSoup
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
-from ipwhois import IPWhois
 
 from .browser import PageCapture
 
@@ -279,35 +278,57 @@ async def _ssl_cert(hostname: str, port: int) -> dict:
         return {"error": str(exc)}
 
 
-async def _whois(hostname: str) -> dict:
-    """Run a WHOIS lookup. Returns a trimmed dict (no raw text blobs)."""
+async def _whois(hostname: str, timeout: int = 10) -> dict:
+    """
+    RDAP lookup for the registrar domain.
+
+    Uses rdap.org — a public RDAP proxy that handles TLD routing automatically.
+    RDAP is the modern JSON-based replacement for legacy WHOIS text queries.
+    """
     if not hostname:
         return {}
 
-    # Strip www. and subdomains — only look up the registrar domain
+    # Strip subdomains — only look up the registrar domain
     parts = hostname.split(".")
     domain = ".".join(parts[-2:]) if len(parts) >= 2 else hostname
 
-    def _lookup():
-        import whois as pythonwhois  # python-whois
+    try:
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
+            r = await client.get(f"https://rdap.org/domain/{domain}")
+            if r.status_code != 200:
+                return {"error": f"RDAP HTTP {r.status_code}"}
+            data = r.json()
+    except Exception as exc:
+        return {"error": str(exc)}
 
-        try:
-            w = pythonwhois.whois(domain)
-            return {
-                "registrar": w.registrar,
-                "creation_date": str(w.creation_date),
-                "expiration_date": str(w.expiration_date),
-                "updated_date": str(w.updated_date),
-                "name_servers": w.name_servers,
-                "status": w.status,
-                "emails": w.emails,
-                "dnssec": w.dnssec,
-                "country": w.country,
-            }
-        except Exception as exc:
-            return {"error": str(exc)}
+    # Parse registrar from entities
+    registrar = None
+    for entity in data.get("entities", []):
+        if "registrar" in entity.get("roles", []):
+            vcard = entity.get("vcardArray", [None, []])[1]
+            for field in vcard:
+                if field[0] == "fn":
+                    registrar = field[3]
+                    break
 
-    return await asyncio.get_event_loop().run_in_executor(None, _lookup)
+    # Parse key event dates
+    dates: dict = {}
+    for event in data.get("events", []):
+        action = event.get("eventAction", "")
+        date = event.get("eventDate")
+        if action == "registration":
+            dates["creation_date"] = date
+        elif action == "expiration":
+            dates["expiration_date"] = date
+        elif action == "last changed":
+            dates["updated_date"] = date
+
+    return {
+        "registrar": registrar,
+        "name_servers": [ns.get("ldhName") for ns in data.get("nameservers", [])],
+        "status": data.get("status", []),
+        **dates,
+    }
 
 
 async def _favicon(

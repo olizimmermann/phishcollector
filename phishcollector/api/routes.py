@@ -524,6 +524,9 @@ async def search(
     technology: Optional[str] = Query(None),
     country: Optional[str] = Query(None),
     title: Optional[str] = Query(None),
+    url: Optional[str] = Query(None),
+    tag: Optional[str] = Query(None),
+    asn: Optional[str] = Query(None),
     limit: int = Query(50, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
 ):
@@ -534,11 +537,14 @@ async def search(
       /search?favicon_hash=-1234567890
       /search?technology=WordPress&country=RU
       /search?ip=185.220.101.1
+      /search?url=amazon&tag=phishing
+      /search?asn=AS13335
     """
     stmt = (
-        select(Fingerprint)
-        .join(Collection)
+        select(Fingerprint, Collection)
+        .join(Collection, Fingerprint.collection_id == Collection.id)
         .where(Collection.status == "completed")
+        .order_by(Collection.submitted_at.desc())
         .limit(limit)
     )
 
@@ -547,19 +553,27 @@ async def search(
     if ip:
         stmt = stmt.where(Fingerprint.ip_address == ip)
     if technology:
-        # JSONB array contains operator
         stmt = stmt.where(Fingerprint.technologies.contains([technology]))
     if country:
         stmt = stmt.where(Fingerprint.country == country.upper())
     if title:
         stmt = stmt.where(Fingerprint.title.ilike(f"%{title}%"))
+    if url:
+        stmt = stmt.where(Collection.url.ilike(f"%{url}%"))
+    if tag:
+        stmt = stmt.where(Collection.tags.contains([tag]))
+    if asn:
+        stmt = stmt.where(Fingerprint.asn.ilike(f"%{asn}%"))
 
     result = await db.execute(stmt)
-    rows = result.scalars().all()
+    rows = result.all()
 
     return [
         {
             "collection_id": str(fp.collection_id),
+            "url": c.url,
+            "submitted_at": c.submitted_at.isoformat() if c.submitted_at else None,
+            "tags": c.tags or [],
             "ip_address": fp.ip_address,
             "country": fp.country,
             "asn": fp.asn,
@@ -569,7 +583,7 @@ async def search(
             "phishing_indicators": fp.phishing_indicators,
             "final_url": fp.final_url,
         }
-        for fp in rows
+        for fp, c in rows
     ]
 
 

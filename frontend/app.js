@@ -18,6 +18,7 @@ const S = {
   collectionList: [],      // cached list for client-side sort without re-fetch
   sortCol:        'submitted_at',
   sortDir:        'desc',
+  spiderHideFailed: true,  // hide non-2xx wordlist paths by default
 };
 
 
@@ -719,14 +720,26 @@ function paneNetwork(reqs) {
 function paneSpider(spider) {
   if (!spider.length) return `<div class="empty">No spider results — either still running or spidering was minimal.</div>`;
 
+  const isSuccess = s => s.status_code >= 200 && s.status_code < 400;
+  const visible = S.spiderHideFailed ? spider.filter(isSuccess) : spider;
+  const hiddenCount = spider.length - spider.filter(isSuccess).length;
+
   return `
+    <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border-bottom:1px solid var(--border)">
+      <span style="font-size:10px;color:var(--dim)">${visible.length} of ${spider.length} paths</span>
+      ${hiddenCount > 0 ? `
+        <button class="btn btn-sm ${S.spiderHideFailed ? 'btn-c' : ''}"
+          onclick="S.spiderHideFailed=!S.spiderHideFailed;document.getElementById('pane-spider').innerHTML=paneSpider(S.detailSpider)"
+          style="font-size:9px">${S.spiderHideFailed ? `SHOW ${hiddenCount} FAILED` : 'HIDE FAILED'}</button>
+      ` : ''}
+    </div>
     <div class="tbl-wrap">
       <table>
         <thead>
           <tr><th>URL</th><th>STATUS</th><th>FOUND VIA</th><th>TITLE</th><th>SIZE</th></tr>
         </thead>
         <tbody>
-          ${spider.map(s => `
+          ${visible.length ? visible.map(s => `
             <tr>
               <td style="max-width:360px">
                 ${urlCell(s.url, 'font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px;display:inline-block;vertical-align:middle')}
@@ -736,11 +749,16 @@ function paneSpider(spider) {
               <td style="font-size:11px;color:var(--bright);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.title||'—')}</td>
               <td style="font-size:10px;color:var(--dim);white-space:nowrap">${s.size_bytes != null ? fmtBytes(s.size_bytes) : '—'}</td>
             </tr>
-          `).join('')}
+          `).join('') : `<tr><td colspan="5" class="empty">All paths returned errors — click SHOW FAILED to view them.</td></tr>`}
         </tbody>
       </table>
     </div>
   `;
+}
+
+function toggleSpiderFilter() {
+  S.spiderHideFailed = !S.spiderHideFailed;
+  document.getElementById('pane-spider').innerHTML = paneSpider(S.detailSpider);
 }
 
 

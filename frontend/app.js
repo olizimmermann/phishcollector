@@ -208,6 +208,15 @@ async function renderCollections() {
 }
 
 function _renderCollectionContent() {
+  // Sync URL and nav without re-triggering the router
+  if (location.hash !== '#collections') {
+    history.replaceState(null, '', '#collections');
+  }
+  S.view = 'collections';
+  document.querySelectorAll('.nav-link').forEach(a =>
+    a.classList.toggle('active', a.dataset.view === 'collections')
+  );
+
   const list = S.collectionList;
   document.getElementById('content').innerHTML = `
     <div class="fade-in">

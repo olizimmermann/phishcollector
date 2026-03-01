@@ -29,8 +29,18 @@ async def check(url: str, api_key: Optional[str] = None, proxy_url: Optional[str
             proxy=proxy_url or None,
             verify=ssl_verify,
         ) as client:
-            r = await client.post(_API_URL, data={"url": url}, headers={"Auth-Key": api_key})
-            r.raise_for_status()
+            r = await client.post(_API_URL, params={"auth-key": api_key}, data={"url": url})
+            if not r.is_success:
+                try:
+                    body = r.json()
+                except Exception:
+                    body = r.text
+                return CheckResult(
+                    plugin_name="urlhaus",
+                    status="error",
+                    score=None,
+                    result={"error": f"HTTP {r.status_code}", "response": body},
+                )
             data = r.json()
     except Exception as exc:
         return CheckResult(

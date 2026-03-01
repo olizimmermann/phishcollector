@@ -17,6 +17,7 @@ async def run_plugins(url: str) -> list[CheckResult]:
         from .urlhaus import check as urlhaus_check
         tasks.append(urlhaus_check(
             url,
+            api_key=settings.urlhaus_api_key,
             proxy_url=settings.proxy_url,
             ssl_verify=settings.proxy_ssl_verify,
         ))

@@ -43,7 +43,8 @@ class Settings(BaseSettings):
     proxy_ssl_verify: bool = True
 
     # ── Threat intelligence plugins ───────────────────────────────────────────
-    urlhaus_enabled: bool = False          # abuse.ch URLhaus — no key required
+    urlhaus_enabled: bool = False          # abuse.ch URLhaus
+    urlhaus_api_key: Optional[str] = None  # abuse.ch Auth-Key — get free at https://auth.abuse.ch/
     virustotal_api_key: Optional[str] = None  # VirusTotal v3 API key
 
     @property

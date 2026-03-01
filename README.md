@@ -148,10 +148,11 @@ phishcollector search --favicon-hash -1234567890
 ## Threat intelligence plugins
 
 ### URLhaus (abuse.ch)
-Free, no API key required.
+Requires a free Auth-Key from [auth.abuse.ch](https://auth.abuse.ch/).
 
 ```dotenv
 PHISH_URLHAUS_ENABLED=true
+PHISH_URLHAUS_API_KEY=<your-auth-key>
 ```
 
 ### VirusTotal

@@ -16,6 +16,14 @@ All results are accessible via a **REST API**, a **web dashboard**, and a **CLI*
 
 ---
 
+## Screenshots
+
+![Dashboard](images/dashboard.png)
+
+![Collection detail](images/example_collection.png)
+
+---
+
 ## Quick start
 
 ```bash

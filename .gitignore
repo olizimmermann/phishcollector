@@ -1,0 +1,48 @@
+# ── Secrets — NEVER commit these ─────────────────────────────────────────────
+.env
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── Virtual environments ─────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+
+# ── Collected data (large; contains malicious content — mount as Docker volume)
+/data/
+*.sqlite
+*.db
+
+# ── Docker ───────────────────────────────────────────────────────────────────
+.dockerignore
+
+# ── IDEs ─────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/

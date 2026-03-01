@@ -1,0 +1,39 @@
+# Web framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Database
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic==1.14.0
+
+# Validation & settings
+pydantic==2.10.4
+pydantic-settings==2.7.0
+
+# Browser automation
+playwright==1.49.0
+
+# HTTP client
+httpx==0.28.1
+
+# HTML parsing
+beautifulsoup4==4.12.3
+lxml==5.3.0
+
+# Fingerprinting
+fake-useragent==2.0.3
+mmh3==5.0.1
+cryptography==44.0.0
+ipwhois==1.2.0
+python-whois==0.9.5
+
+# Async file I/O
+aiofiles==24.1.0
+
+# CLI
+click==8.1.8
+rich==13.9.4
+
+# Multipart (file upload support for API)
+python-multipart==0.0.20

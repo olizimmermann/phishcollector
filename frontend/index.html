@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PHISH_COLLECTOR</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- CRT scanline overlay -->
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <!-- ── Header ──────────────────────────────────────── -->
+  <header>
+    <div class="logo">
+      <span class="logo-brk">[</span>
+      <span class="logo-text">PHISH_COLLECTOR</span>
+      <span class="logo-ver">v1.0</span>
+      <span class="logo-brk">]</span>
+    </div>
+
+    <nav>
+      <a href="#dashboard"   class="nav-link" data-view="dashboard">  01.DASHBOARD</a>
+      <a href="#collections" class="nav-link" data-view="collections">02.COLLECTIONS</a>
+      <a href="#search"      class="nav-link" data-view="search">     03.SEARCH</a>
+    </nav>
+
+    <div class="hdr-right">
+      <span class="sys-clock" id="sys-clock">00:00:00Z</span>
+      <div class="api-pill">
+        <span class="dot" id="api-dot"></span>
+        <span id="api-label">CONNECTING</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Main content ────────────────────────────────── -->
+  <main id="content" role="main"></main>
+
+  <!-- ── Toast container ─────────────────────────────── -->
+  <div id="toasts" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "phishcollector"
+version = "1.0.0"
+requires-python = ">=3.12"
+
+[project.scripts]
+phishcollector = "phishcollector.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["phishcollector*"]

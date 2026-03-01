@@ -1,0 +1,161 @@
+# PhishCollector — curated phishing kit path wordlist
+# Lines starting with # are ignored.
+# These are real paths observed in phishing kit deployments.
+
+# ── Entry points ──────────────────────────────────────────────────────────────
+index.php
+login.php
+signin.php
+secure.php
+verify.php
+verification.php
+confirm.php
+update.php
+home.php
+portal.php
+webmail.php
+dashboard.php
+
+# ── Redirectors & result pages ────────────────────────────────────────────────
+redirect.php
+gate.php
+result.php
+success.php
+error.php
+submit.php
+track.php
+check.php
+step1.php
+step2.php
+step3.php
+next.php
+done.php
+
+# ── Kit back-end scripts ──────────────────────────────────────────────────────
+send.php
+mailer.php
+smtp.php
+mail.php
+fetch.php
+log.php
+save.php
+post.php
+collect.php
+upload.php
+getter.php
+sender.php
+receiver.php
+
+# ── Logs and data dumps ────────────────────────────────────────────────────────
+log.txt
+logs/
+victims/
+results/
+data/
+out/
+output/
+logins.txt
+passwords.txt
+creds.txt
+emails.txt
+dump.txt
+info.txt
+
+# ── Administration ────────────────────────────────────────────────────────────
+admin/
+admin/login.php
+admin/index.php
+admin/dashboard.php
+panel/
+panel/index.php
+cpanel/
+setup/
+install/
+config/
+config.php
+settings.php
+
+# ── Backup & archives ──────────────────────────────────────────────────────────
+backup/
+backup.zip
+backup.tar.gz
+kit.zip
+site.zip
+phish.zip
+www.zip
+html.zip
+
+# ── Brand-specific paths (commonly spoofed) ───────────────────────────────────
+# Microsoft / Office365
+office/
+office365/
+microsoft/
+ms/
+msonline/
+onedrive/
+sharepoint/
+outlook/
+
+# Google
+google/
+gmail/
+accounts/
+myaccount/
+drive/
+
+# Apple
+apple/
+appleid/
+icloud/
+itunes/
+
+# PayPal
+paypal/
+payment/
+billing/
+invoice/
+
+# Amazon
+amazon/
+aws/
+prime/
+
+# Banking (generic)
+banking/
+netbanking/
+secure/
+security/
+mybank/
+account/
+accounts/
+
+# Social media
+facebook/
+instagram/
+linkedin/
+twitter/
+
+# Netflix / streaming
+netflix/
+subscription/
+
+# ── Anti-bot / IP check scripts ────────────────────────────────────────────────
+antibot.php
+ipcheck.php
+bot.php
+check_ip.php
+block.php
+filter.php
+bypass.php
+
+# ── Miscellaneous kit files ───────────────────────────────────────────────────
+.env
+.htaccess
+robots.txt
+sitemap.xml
+crossdomain.xml
+readme.txt
+README.txt
+README.md
+CHANGELOG.txt
+web.config
